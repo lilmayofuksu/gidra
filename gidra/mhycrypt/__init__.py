@@ -22,10 +22,10 @@ def init_keys(path: str):
     with open(os.path.join(path, 'SigningKey.pem'), 'r') as f:
         keys["SigningKey"] = RSA.import_key(f.read())
 
-    with open(os.path.join(path, 'MHYSignRsaOS.pem'), 'r') as f:
+    with open(os.path.join(path, 'MHYSignOS.pem'), 'r') as f:
         keys["MHYSignOS"] = RSA.import_key(f.read())
 
-    with open(os.path.join(path, 'MHYSignRsaCN.pem'), 'r') as f:
+    with open(os.path.join(path, 'MHYSignCN.pem'), 'r') as f:
         keys["MHYSignCN"] = RSA.import_key(f.read())
 
 
