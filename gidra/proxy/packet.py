@@ -34,7 +34,11 @@ class Packet:
         self.head = proto.PacketHead().parse(buf.read(metadata_len))
 
         proto_class = getattr(proto, self.cmdid.name, None)
-        self.body = proto_class().parse(buf.read(data_len))
+
+        if data_len:
+            self.body = proto_class().parse(buf.read(data_len))
+        else:
+            self.body = proto_class()
 
         magic2 = buf.read_u16b()
         if magic2 != PACKET_MAGIC[1]:
