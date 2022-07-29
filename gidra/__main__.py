@@ -2,10 +2,9 @@ from gidra.plugins import (change_account, change_nickname,
                             commands, windseed_blocker, seed_exchange)
 
 
-from gidra.proxy import GenshinProxy
-from gidra import mhycrypt
-from gidra.proto import QueryCurrRegionHttpRsp
-from gidra.mhycrypt import init_keys
+from gidra.proxy import GenshinProxy, PacketDirection
+from gidra.proto import QueryCurrRegionHttpRsp, WindSeedClientNotify
+from gidra.mhycrypt import init_keys, decrypt, encrypt_and_sign
 import ec2b
 
 from bottle import route, run, request
@@ -24,7 +23,7 @@ def handle_query_cur():
 
         key_id = int(request.query.key_id)
         respdata = r.json()
-        respdec = mhycrypt.decrypt(base64.b64decode(respdata['content']), key_id)
+        respdec = decrypt(base64.b64decode(respdata['content']), key_id)
 
         proto = QueryCurrRegionHttpRsp()
         proto.parse(respdec)
@@ -34,7 +33,7 @@ def handle_query_cur():
             proto.region_info.gateserver_port = 8888
             proxy.key = ec2b.derive(proto.client_secret_key)
 
-        enc_data, sign = mhycrypt.encrypt_and_sign(bytes(proto), key_id)
+        enc_data, sign = encrypt_and_sign(bytes(proto), key_id)
         return {'content': base64.b64encode(enc_data).decode(), 'sign': base64.b64encode(sign).decode()}
 
     else:
