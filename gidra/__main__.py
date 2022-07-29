@@ -3,7 +3,7 @@ from gidra.plugins import (change_account, change_nickname,
 
 
 from gidra.proxy import GenshinProxy, PacketDirection
-from gidra.proto import QueryCurrRegionHttpRsp, WindSeedClientNotify
+from gidra.proto import QueryCurrRegionHttpRsp
 from gidra.mhycrypt import init_keys, decrypt, encrypt_and_sign
 import ec2b
 
@@ -52,10 +52,10 @@ proxy = GenshinProxy(('127.0.0.1', 8888), ('47.245.143.151', 22102))
 def main():
     init_keys("./keys")
     #proxy.add(change_account.router)
-    proxy.add(change_nickname.router)
+    #proxy.add(change_nickname.router)
     proxy.add(windseed_blocker.router)
     proxy.add(seed_exchange.router)
-    proxy.add(commands.router)
+    #proxy.add(commands.router)
 
     proxy.start()
 
