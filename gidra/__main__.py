@@ -11,13 +11,19 @@ from bottle import route, run, request
 import requests
 import base64
 
+PROXY_GATESERVER = ('127.0.0.1', 8888)
+
+#Change these according to your account's region
+TARGET_DISPATCH_URL = 'https://oseurodispatch.yuanshen.com/query_cur_region'
+TARGET_GATESERVER = ('47.245.143.151', 22102)
+
 @route('/query_cur_region')
 def handle_query_cur():
     # Trick to bypass system proxy, this way we don't need to hardcode the ec2b key
     session = requests.Session()
     session.trust_env = False
 
-    r = session.get(f'https://oseurodispatch.yuanshen.com/query_cur_region?{request.query_string}')
+    r = session.get(f'{TARGET_DISPATCH_URL}?{request.query_string}')
 
     if any(map(request.query.version.__contains__, ["2.7.5", "2.8", "2.8.5", "3.0"])):
 
@@ -29,8 +35,7 @@ def handle_query_cur():
         proto.parse(respdec)
 
         if proto.retcode == 0:
-            proto.region_info.gateserver_ip = '127.0.0.1'
-            proto.region_info.gateserver_port = 8888
+            proto.region_info.gateserver_ip, proto.region_info.gateserver_port = PROXY_GATESERVER
             proxy.key = ec2b.derive(proto.client_secret_key)
 
         enc_data, sign = encrypt_and_sign(bytes(proto), key_id)
@@ -41,13 +46,12 @@ def handle_query_cur():
         proto.parse(base64.b64decode(r.text))
 
         if proto.retcode == 0:
-            proto.region_info.gateserver_ip = '127.0.0.1'
-            proto.region_info.gateserver_port = 8888
+            proto.region_info.gateserver_ip, proto.region_info.gateserver_port = PROXY_GATESERVER
             proxy.key = ec2b.derive(proto.client_secret_key)
 
         return base64.b64encode(bytes(proto)).decode()
 
-proxy = GenshinProxy(('127.0.0.1', 8888), ('47.245.143.151', 22102))
+proxy = GenshinProxy(PROXY_GATESERVER, TARGET_GATESERVER)
 
 def main():
     init_keys("./keys")
