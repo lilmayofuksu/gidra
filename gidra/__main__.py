@@ -1,5 +1,5 @@
 from gidra.plugins import (change_account, change_nickname,
-                            commands, windseed_blocker, seed_exchange)
+                            commands, windseed_blocker, seed_exchange, checksum_bypass)
 
 
 from gidra.proxy import GenshinProxy, PacketDirection
@@ -59,6 +59,7 @@ def main():
     #proxy.add(change_nickname.router)
     proxy.add(windseed_blocker.router)
     proxy.add(seed_exchange.router)
+    proxy.add(checksum_bypass.router)
     #proxy.add(commands.router)
 
     proxy.start()

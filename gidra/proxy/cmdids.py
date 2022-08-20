@@ -283,7 +283,6 @@ class CmdID(IntEnum):
     DataResVersionNotify = 167
     DealAddFriendReq = 4003
     DealAddFriendRsp = 4090
-    DebugNotify = 101
     DelMailReq = 1421
     DelMailRsp = 1403
     DelScenePlayTeamEntityNotify = 3318
