@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import base64
 from enum import Enum
+import json
 from threading import Thread
+from time import time
 from typing import Callable
 
 from betterproto import Message
@@ -13,7 +15,19 @@ from gidra.proxy.cmdids import CmdID
 from gidra.proxy.kcp_socket import KcpSocket, _Address
 from gidra.proxy.packet import Packet
 
+import os
+import os.path
+import datetime
+
+loopPackets = ['WorldPlayerRTTNotify','PingReq','PingRsp','UnionCmdNotify','SetEntityClientDataNotify']
+
+if not os.path.exists(os.path.join(os.path.abspath(os.path.dirname(__file__)), "../packet_dump/")):
+    os.mkdir(os.path.join(os.path.abspath(os.path.dirname(__file__)), "../packet_dump/"))
+    logger.info('Created directory for dumping packets at {}'.format(os.path.join(os.path.abspath(os.path.dirname(__file__)), "../packet_dump/")))
+    
+
 Handler = Callable[['GenshinProxy', Message], None]
+
 
 
 class PacketDirection(Enum):
@@ -83,6 +97,8 @@ class ClientProxy(Thread):
 
 
 class GenshinProxy:
+    counter = 0
+    packet_data = []
     def __init__(self, src_addr: _Address, dst_addr: _Address):
         self.router = HandlerRouter()
         self.src_addr = src_addr
@@ -104,10 +120,21 @@ class GenshinProxy:
             self.send_raw(data, direction)
             return
         
-        logger.debug(f'{PacketDirection(direction.value ^ 1).name} -> {direction.name} {packet.cmdid}: {packet.body.__class__.__name__}')
+        if not loopPackets.__contains__(packet.body.__class__.__name__):
+            logger.debug(f'{PacketDirection(direction.value ^ 1).name} -> {direction.name} {packet.cmdid}: {packet.body.__class__.__name__}')
+
+        try:
+            self.packet_data.append({"index": self.counter,"packetId": packet.cmdid,"protoName":packet.body.__class__.__name__,"source":PacketDirection(direction.value ^ 1).name,"time": time(),"object": json.loads(packet.body.to_json())})
+        except Exception as e:
+            logger.error(f'Error while writing dump for {packet.body.__class__.__name__} ({packet.cmdid}) [{e}]')
+
+        self.counter+=1
 
         if handler := self.router.get(packet.cmdid, PacketDirection(direction.value ^ 1)):
-            handler(self, packet.body)
+            if(packet.cmdid != CmdID.WindSeedClientNotify): # Windy blocker 
+                handler(self, packet.body)
+            else:
+                logger.debug('Blocked Windy, L mihoyo')
         else:
             self.send_raw(data, direction)
 
