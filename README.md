@@ -61,7 +61,7 @@ class Handlers
 
 ### Format of packet capture:
 
-```json
+```jsonc
 [
   {
     "index": int,
