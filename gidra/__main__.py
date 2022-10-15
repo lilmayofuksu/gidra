@@ -1,5 +1,4 @@
 import datetime
-import os.path
 import json
 import os
 
@@ -18,18 +17,23 @@ from bottle import route, run, request
 import requests
 import base64
 
-PROXY_GATESERVER = ('127.0.0.1', 8888)
+PROXY_GATESERVER = ('127.0.0.1', 8888) # Game Proxy
+PROXY_DISPATCH = ('127.0.0.1',8081) # Http Proxy
 
-#Change these according to your account's region
-# TARGET_DISPATCH_URL = 'https://oseurodispatch.yuanshen.com/query_cur_region'
-# TARGET_GATESERVER = ('47.245.143.151', 22102)
-
-# for Asis
-TARGET_DISPATCH_URL = 'https://osasiadispatch.yuanshen.com/query_cur_region'
-TARGET_GATESERVER = ('8.211.169.246', 22102)
+TARGET_DISPATCH_URL = None
+TARGET_GATESERVER = None
+proxy: GenshinProxy = None
 
 @route('/query_cur_region')
 def handle_query_cur():
+
+    global TARGET_DISPATCH_URL
+
+    region = request.get_header('url')
+    logger.info(f'Found Region: {str(region).split("dispatch")[0]}')
+
+    TARGET_DISPATCH_URL =  "https://" + str(region) + "/query_cur_region"
+
     # Trick to bypass system proxy, this way we don't need to hardcode the ec2b key
     session = requests.Session()
     session.trust_env = False
@@ -44,6 +48,14 @@ def handle_query_cur():
 
         proto = QueryCurrRegionHttpRsp()
         proto.parse(respdec)
+
+        global TARGET_GATESERVER
+        TARGET_GATESERVER = (proto.region_info.gateserver_ip,proto.region_info.gateserver_port)
+        logger.info(f'Connecting to GateServer: {TARGET_GATESERVER}')
+
+        global proxy
+        proxy = GenshinProxy(PROXY_GATESERVER,TARGET_GATESERVER)
+        initProxy()
 
         if proto.retcode == 0:
             proto.region_info.gateserver_ip, proto.region_info.gateserver_port = PROXY_GATESERVER
@@ -62,30 +74,31 @@ def handle_query_cur():
 
         return base64.b64encode(bytes(proto)).decode()
 
-proxy = GenshinProxy(PROXY_GATESERVER, TARGET_GATESERVER)
 
-def main():
-    init_keys("./keys")
+def initProxy():
     #proxy.add(change_account.router)
     #proxy.add(change_nickname.router)
-    # proxy.add(windseed_blocker.router) # Already blocked in proxy
+    # proxy.add(windseed_blocker.router) # Already blocked in proxy as kcp crashes
     proxy.add(seed_exchange.router)
     proxy.add(checksum_bypass.router)
     #proxy.add(commands.router)
-
     proxy.start()
 
-    run(host='127.0.0.1', port=8081, debug=False)
+def main():
+    logger.info('Starting gidra proxy...')
+    logger.debug(f'Proxy running on {PROXY_DISPATCH[0]}:{PROXY_DISPATCH[1]}, you can start your game now!')
+    init_keys("./keys")
+    run(host=PROXY_DISPATCH[0], port=PROXY_DISPATCH[1], debug=False, quiet = True)
 
 if __name__ == '__main__':
     main()
 
 def handleExit():
-    logger.debug('Saving the dump file...')
+    logger.info('Captured a total of {} packets!'.format(len(proxy.packet_data)))
     try:
-        logger.info('Captured a total of {} packets!'.format(len(proxy.packet_data)))
+        logger.debug('Saving the dump file to IG_' +  datetime.datetime.now().strftime("%Y-%m-%d-%H.%M.%S")+'.json')
         if(len(proxy.packet_data)!=0):
-            json.dump(proxy.packet_data,open("gidra/packet_dump/"+datetime.datetime.now().strftime("%Y-%m-%d-%H.%M.%S")+'.json','w'),indent=2)
+            json.dump(proxy.packet_data,open("gidra/packet_dump/IG_"+datetime.datetime.now().strftime("%Y-%m-%d-%H.%M.%S")+'.json','w'),indent=2)
             logger.debug('Done saving..')
     except Exception as e:
         logger.error(f'Error while saving dump ({e})')
