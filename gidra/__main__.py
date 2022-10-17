@@ -54,7 +54,7 @@ def handle_query_cur():
         logger.info(f'Connecting to GateServer: {TARGET_GATESERVER}')
 
         global proxy
-        proxy = GenshinProxy(PROXY_GATESERVER,TARGET_GATESERVER)
+        proxy = GenshinProxy(PROXY_GATESERVER,TARGET_GATESERVER,key_id)
         initProxy()
 
         if proto.retcode == 0:
