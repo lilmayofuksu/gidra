@@ -17,13 +17,19 @@ cd Iridium-gidra
 poetry install
 ```
 
-3. Run the following commands to start proxy
+3. Install python-kcp
+```powershell
+cd python-kcp
+python setup.py install
+```
+
+4. Run the following commands to start proxy
 
 ```powershell
 py -m gidra
 ```
 
-4. Use the following fiddler script to redirect dispatch
+5. Use the following fiddler script to redirect dispatch
 
 ```cs
 /* Gidra proxy fiddler script */
@@ -50,9 +56,9 @@ class Handlers
 };
 ```
 
-5. **Use patched `UserAssembly.dll` or the proxy won't work!! and be sure to change it back when you are not using the proxy!!**
+6. **Use patched `UserAssembly.dll` or the proxy won't work!! and be sure to change it back when you are not using the proxy!!**
 
-6. Start the game and have fun!
+7. Start the game and have fun!
 
 ## Note
 
