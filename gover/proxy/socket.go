@@ -32,18 +32,22 @@ type KCPConn struct {
 	running    bool
 	keyID      int
 	seed       uint64
+	once       sync.Once
 }
 
 func (c *KCPConn) Start() {
 	go func() {
 		// recv from server
 		buf := make([]byte, BUFFER_SIZE)
-		remote, server, local := c.remote, c.server, c.writeLocal
+		remote, server := c.remote, c.server
 		for {
 			n, err := remote.Read(buf)
 			// colorlog.Debug("read from server, n: %d", n)
 			if err != nil {
 				colorlog.Error("read udp from server failed, err: %+v", err)
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
 				continue
 			}
 			if IsHandshakePacket(buf[:n]) {
@@ -54,12 +58,7 @@ func (c *KCPConn) Start() {
 				}
 				switch handshake.m1 {
 				case HANDSHAKE_FIN:
-					local(buf[:n])
-					remote.Close()
-					c.running = false
-					close(c.cChan)
-					close(c.sChan)
-					c.recorder.Stop()
+					c.Close(handshake)
 					return
 				}
 				continue
@@ -82,8 +81,9 @@ func (c *KCPConn) Start() {
 	go func() {
 		// update client
 		for c.running {
-			c.client.Update()
-			next := c.client.Check() - kcp.CurrentMs()
+			cur := kcp.CurrentMs()
+			c.client.Update(cur)
+			next := c.client.Check(cur) - cur
 			if next > 0 {
 				time.Sleep(time.Millisecond * time.Duration(next))
 			}
@@ -92,8 +92,9 @@ func (c *KCPConn) Start() {
 	go func() {
 		// update server
 		for c.running {
-			c.server.Update()
-			next := c.server.Check() - kcp.CurrentMs()
+			cur := kcp.CurrentMs()
+			c.server.Update(cur)
+			next := c.server.Check(cur) - cur
 			if next > 0 {
 				time.Sleep(time.Millisecond * time.Duration(next))
 			}
@@ -178,7 +179,20 @@ func (c *KCPConn) Input(data []byte, size int) int {
 }
 
 func (c *KCPConn) Close(hs *Handshake) {
-	c.remote.Write(hs.Compose())
+	c.once.Do(func() {
+		if hs == nil {
+			hs = NewHandshakePacket(HANDSHAKE_FIN, c.hs.conv, c.hs.token, 1, 0x19419494)
+		}
+		c.remote.Write(hs.Compose())
+		c.remote.Close()
+		c.writeLocal(hs.Compose())
+		c.running = false
+		close(c.cChan)
+		close(c.sChan)
+		c.recorder.Stop()
+		c.client.Free()
+		c.server.Free()
+	})
 }
 
 func ConstructKCPConn(remote *net.UDPAddr, writeLocal WriteFunc, hs *Handshake, key *utils.PacketKey, keyID int) (*KCPConn, error) {
@@ -231,6 +245,7 @@ func ConstructKCPConn(remote *net.UDPAddr, writeLocal WriteFunc, hs *Handshake, 
 	}
 	client.SetMtu(1200)
 	client.WndSize(1024, 1024)
+	client.NoDelay(1, 10, 2, 1)
 
 	server, err := kcp.NewKCPWithToken(handshake.conv, handshake.token, func(buf []byte, size int) {
 		// colorlog.Debug("send to server, n: %d", size)
@@ -285,6 +300,7 @@ type KCPSocket struct {
 }
 
 func (k *KCPSocket) Start() {
+	k.conns = &sync.Map{}
 	go func() {
 		// recv from local
 		buf := make([]byte, BUFFER_SIZE)
@@ -294,6 +310,9 @@ func (k *KCPSocket) Start() {
 			// colorlog.Debug("read from %+v, n: %d", addr, n)
 			if err != nil {
 				colorlog.Error("read udp from local failed, err: %+v", err)
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
 				continue
 			}
 			if IsHandshakePacket(buf[:n]) {
@@ -334,13 +353,21 @@ func (k *KCPSocket) Start() {
 	}()
 }
 
+func (s *KCPSocket) Stop() {
+	s.local.Close()
+	s.conns.Range(func(key, value interface{}) bool {
+		value.(*KCPConn).Close(nil)
+		return true
+	})
+	s.conns = nil
+}
+
 func NewKCPSocket(local *net.UDPConn, remote *net.UDPAddr, dispatchKey *utils.PacketKey, keyID int) *KCPSocket {
-	conns := &sync.Map{}
 	return &KCPSocket{
 		local:  local,
 		remote: remote,
 		key:    dispatchKey,
 		keyID:  keyID,
-		conns:  conns,
+		conns:  nil,
 	}
 }

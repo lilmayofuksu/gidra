@@ -216,4 +216,7 @@ func main() {
 	go http.ListenAndServe(HTTP_LST, nil)
 	colorlog.Info("running...")
 	WaitExit()
+	for _, v := range gameServers {
+		v.sock.Stop()
+	}
 }

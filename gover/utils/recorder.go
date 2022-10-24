@@ -28,8 +28,9 @@ func (r *Recorder) Stop() {
 		colorlog.Warn("marshaling records failed, err: %+v", err)
 		return
 	}
-	fileName := fmt.Sprintf("log_%d_%d.json", time.Now().UnixMilli(), rand.Int()%10000)
+	fileName := fmt.Sprintf("log_%s_%d.json", time.Now().Format("2006_01_02_15_04_05"), rand.Int()%10000)
 	os.WriteFile(fileName, content, 0644)
+	colorlog.Info("log write to %s, with %d packet(s)", fileName, len(r.d))
 }
 
 func (r *Recorder) Record(packet []byte) {

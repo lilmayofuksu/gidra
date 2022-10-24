@@ -1,6 +1,8 @@
 package kcp
 
 /*
+#cgo CFLAGS: -O3
+
 #include "ikcp.h"
 typedef int (*OutputCallback)(const char *buf, int len, struct IKCPCB *kcp, void *user);
 typedef const char const_char;
@@ -75,14 +77,14 @@ func (k *KCP) Recv(data []byte) int {
 	return int(ret)
 }
 
-func (k *KCP) Check() uint32 {
-	cur := C.uint32_t(currentMs())
+func (k *KCP) Check(current uint32) uint32 {
+	cur := C.uint32_t(current)
 	ret := C.ikcp_check(k.priv, cur)
 	return uint32(ret)
 }
 
-func (k *KCP) Update() {
-	cur := C.uint32_t(currentMs())
+func (k *KCP) Update(current uint32) {
+	cur := C.uint32_t(current)
 	C.ikcp_update(k.priv, cur)
 }
 

@@ -7,20 +7,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/MoonlightPS/Iridium-gidra/gover/kcp_"
+	"github.com/MoonlightPS/Iridium-gidra/gover/kcp"
 )
 
 func BenchmarkSyncMap(b *testing.B) {
 	m := &sync.Map{}
 	for i := 0; i < 10000; i++ {
-		m.Store(i, kcp_.NewKCPWithToken(1, 2, func(buf []byte, size int) {}))
+		k, err := kcp.NewKCPWithToken(1, 2, func(buf []byte, size int) {})
+		if err != nil {
+			panic(err)
+		}
+		m.Store(i, k)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		m.Range(func(key, value interface{}) bool {
-			obj := value.(*kcp_.KCP)
-			obj.Input(make([]byte, 1024), true, false)
-			return false
+			obj := value.(*kcp.KCP)
+			obj.Input(make([]byte, 1024))
+			return true
 		})
 	}
 }
