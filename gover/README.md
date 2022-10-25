@@ -1,44 +1,29 @@
 # Iridium-gidra
 
-A proxy between the client and the server of a certain anime game
+A proxy between the client and the server of a certain anime game (Written in GoLang by [Night12138](https://github.com/Night12138))
 
 ## Usage (Go version)
-[Click Here](https://github.com/MoonlightPS/Iridium-gidra/tree/master/gover) to view usage for go version
-
-Highly recommended to use this version as there is a huge performance increase thanks to [Night12138](https://github.com/Night12138)
-
-## Usage (Python version)
-
+Highly recommended to use this version as there is a huge performance increase
 1. Clone the Github Repository
-
 ```powershell
 git clone https://github.com/MoonlightPS/Iridium-gidra.git
-cd Iridium-gidra
+cd Iridium-gidra/gover
 ```
 
-2. Install [Poetry](https://python-poetry.org/docs/#installing-with-the-official-installer) and use the following command to install the required dependencies
+2. Install [GoLang](https://go.dev/doc/install)
+
+3. Run the following commands to start the proxy 
 
 ```powershell
-poetry install
+go install
+go run main.go
 ```
 
-3. Install python-kcp
-```powershell
-cd python-kcp
-python setup.py install
-```
+4. Use the following [fiddler script](https://github.com/MoonlightPS/Iridium-gidra#fiddler-script) to redirect dispatch
 
-4. Run the following commands to start proxy
+5. **Use patched `UserAssembly.dll` or the proxy won't work!! and be sure to change it back when you are not using the proxy!!**
 
-```powershell
-py -m gidra
-```
-
-5. Use the following [fiddler script](https://github.com/MoonlightPS/Iridium-gidra#fiddler-script) to redirect dispatch
-
-6. **Use patched `UserAssembly.dll` or the proxy won't work!! and be sure to change it back when you are not using the proxy!!**
-
-7. Start the game and have fun!
+6. Start the game and have fun!
 
 ## Fiddler Script
 ```cs
@@ -68,7 +53,7 @@ class Handlers
 
 ## Note
 
-- Packets captured are saved after you exit out of gidra in console and can be found in `./gidra/packet_dump`
+- Packets captured by gover are stored in `./gover` and are saved as soon as you quit the game or exit the console
 - proxy auto detects dispatch url and gateserver address when using the above fiddler script, you do not have to hardcode any of these!
 
 ### Format of packet capture:
