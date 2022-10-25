@@ -10,12 +10,14 @@ extern int go_callback(const_char *buf, int len, struct IKCPCB *kcp, void *user)
 */
 import "C"
 import (
+	"sync"
 	"time"
 	"unsafe"
 )
 
 type KCP struct {
 	priv *C.struct_IKCPCB
+	mu   *sync.Mutex
 }
 type KCPCallback = func(buf []byte, size int)
 
@@ -47,16 +49,27 @@ func NewKCPWithToken(conv, token uint32, callback KCPCallback) (*KCP, error) {
 	userInfo := NewObjectId(&UserInfo{cb: callback})
 	h, err := C.ikcp_create(C.uint32_t(conv), C.uint32_t(token), unsafe.Pointer(userInfo))
 	h.output = C.OutputCallback(C.go_callback)
-	return &KCP{h}, err
+	return &KCP{h, &sync.Mutex{}}, err
 }
 
 func (k *KCP) Free() {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.priv == nil {
+		return
+	}
 	id := (ObjectId)(k.priv.user)
 	(&id).Free()
 	C.ikcp_release(k.priv)
+	k.priv = nil
 }
 
 func (k *KCP) Input(data []byte) int {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.priv == nil {
+		return 0
+	}
 	ptr := (*C.const_char)(unsafe.Pointer(&data[0]))
 	size := C.long(len(data))
 	ret := C.ikcp_input(k.priv, ptr, size)
@@ -64,6 +77,11 @@ func (k *KCP) Input(data []byte) int {
 }
 
 func (k *KCP) Send(data []byte) int {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.priv == nil {
+		return 0
+	}
 	ptr := (*C.const_char)(unsafe.Pointer(&data[0]))
 	size := C.int(len(data))
 	ret := C.ikcp_send(k.priv, ptr, size)
@@ -71,6 +89,11 @@ func (k *KCP) Send(data []byte) int {
 }
 
 func (k *KCP) Recv(data []byte) int {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.priv == nil {
+		return 0
+	}
 	ptr := (*C.const_char)(unsafe.Pointer(&data[0]))
 	size := C.int(len(data))
 	ret := C.ikcp_recv(k.priv, ptr, size)
@@ -78,12 +101,22 @@ func (k *KCP) Recv(data []byte) int {
 }
 
 func (k *KCP) Check(current uint32) uint32 {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.priv == nil {
+		return 0
+	}
 	cur := C.uint32_t(current)
 	ret := C.ikcp_check(k.priv, cur)
 	return uint32(ret)
 }
 
 func (k *KCP) Update(current uint32) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.priv == nil {
+		return
+	}
 	cur := C.uint32_t(current)
 	C.ikcp_update(k.priv, cur)
 }
