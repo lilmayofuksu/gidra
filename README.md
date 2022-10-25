@@ -7,6 +7,9 @@ A proxy between the client and the server of a certain anime game
 
 Highly recommended to use this version as there is a huge performance increase thanks to [Night12138](https://github.com/Night12138)
 
+## Warning
+WindSeed is not blocked on either of the proxies! for your [safety](https://github.com/MoonlightPS/Iridium-gidra/commit/a58ac1263e85539e7475100ea50ba86a1ea7ed7b#commitcomment-87842613)
+
 ## Usage (Python version)
 
 1. Clone the Github Repository
