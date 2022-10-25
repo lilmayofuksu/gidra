@@ -104,13 +104,13 @@ func (c *KCPConn) Start() {
 		// process client req
 		ch, recorder, parser, server := c.cChan, c.recorder, c.parser, c.server
 		for packet := range ch {
-			recorder.Record(packet)
-
+			// now := time.Now()
 			cmd, err := parser.ParseCmd(packet)
 			if err != nil {
 				colorlog.Error("parse client packet failed! err: %+v", err)
 				continue
 			}
+			recorder.Record(packet, utils.SOURCE_CLIENT, cmd)
 
 			// colorlog.Debug("client recv packet cmd:%d, n:%d", cmd, len(packet))
 
@@ -126,6 +126,7 @@ func (c *KCPConn) Start() {
 			if res != 0 {
 				colorlog.Error("send client packet failed! err: %+v", cmd)
 			}
+			// colorlog.Debug("client packet handle take: %v", time.Since(now))
 		}
 		colorlog.Warn("processor client quit")
 	}()
@@ -133,13 +134,13 @@ func (c *KCPConn) Start() {
 		// process server rsp
 		ch, recorder, parser, client := c.sChan, c.recorder, c.parser, c.client
 		for packet := range ch {
-			recorder.Record(packet)
-
+			// now := time.Now()
 			cmd, err := parser.ParseCmd(packet)
 			if err != nil {
 				colorlog.Error("parse server packet failed! err: %+v", err)
 				continue
 			}
+			recorder.Record(packet, utils.SOURCE_SERVER, cmd)
 
 			// colorlog.Debug("server recv packet cmd:%d, n:%d", cmd, len(packet))
 
@@ -156,6 +157,7 @@ func (c *KCPConn) Start() {
 			if res != 0 {
 				colorlog.Error("send server packet failed! err: %+v", cmd)
 			}
+			// colorlog.Debug("server packet handle take: %v", time.Since(now))
 		}
 		colorlog.Warn("processor server quit")
 	}()

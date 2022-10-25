@@ -23,6 +23,14 @@ type Packet struct {
 	Body   Message
 }
 
+func GetCMDDescription(cmd int) string {
+	if v, ok := protoMap[cmd]; ok {
+		m := v.ProtoReflect().Descriptor().Name()
+		return string(m)
+	}
+	return "Unknown"
+}
+
 func (h *PacketHandler) Decode(cmd int, body []byte) (Message, error) {
 	if v, ok := protoMap[cmd]; ok {
 		m := v.ProtoReflect().New().Interface()
