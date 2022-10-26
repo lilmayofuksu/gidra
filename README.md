@@ -2,7 +2,15 @@
 
 A proxy between the client and the server of a certain anime game
 
-## Usage
+## Usage (Go version)
+[Click Here](https://github.com/MoonlightPS/Iridium-gidra/tree/master/gover) to view usage for go version
+
+Highly recommended to use this version as there is a huge performance increase thanks to [Night12138](https://github.com/Night12138)
+
+## Warning
+WindSeed is not blocked on either of the proxies! for your [safety](https://github.com/MoonlightPS/Iridium-gidra/commit/a58ac1263e85539e7475100ea50ba86a1ea7ed7b#commitcomment-87842613)
+
+## Usage (Python version)
 
 1. Clone the Github Repository
 
@@ -29,8 +37,13 @@ python setup.py install
 py -m gidra
 ```
 
-5. Use the following fiddler script to redirect dispatch
+5. Use the following [fiddler script](https://github.com/MoonlightPS/Iridium-gidra#fiddler-script) to redirect dispatch
 
+6. **Use patched `UserAssembly.dll` or the proxy won't work!! and be sure to change it back when you are not using the proxy!!**
+
+7. Start the game and have fun!
+
+## Fiddler Script
 ```cs
 /* Gidra proxy fiddler script */
 import System;
@@ -55,10 +68,6 @@ class Handlers
     }
 };
 ```
-
-6. **Use patched `UserAssembly.dll` or the proxy won't work!! and be sure to change it back when you are not using the proxy!!**
-
-7. Start the game and have fun!
 
 ## Note
 

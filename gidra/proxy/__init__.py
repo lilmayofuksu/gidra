@@ -132,10 +132,11 @@ class GenshinProxy:
         self.counter+=1
 
         if handler := self.router.get(packet.cmdid, PacketDirection(direction.value ^ 1)):
-            if(packet.cmdid != CmdID.WindSeedClientNotify): # Windy blocker 
-                handler(self, packet.body)
-            else:
-                logger.debug('Blocked Windy, L mihoyo')
+            # if(packet.cmdid != CmdID.WindSeedClientNotify): # Windy blocker 
+            #     handler(self, packet.body)
+            # else:
+            #     logger.debug('Blocked Windy, L mihoyo')
+            handler(self, packet.body)
         else:
             self.send_raw(data, direction)
 

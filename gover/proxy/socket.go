@@ -144,6 +144,11 @@ func (c *KCPConn) Start() {
 
 			// colorlog.Debug("server recv packet cmd:%d, n:%d", cmd, len(packet))
 
+			// if cmd == utils.WindSeedClientNotify {
+			// 	colorlog.Warn("Blocked WindSeedClientNotify")
+			// 	continue
+			// }
+
 			if handler, ok := handlersMap[cmd]; ok {
 				packet, err = handler(c, packet)
 				if err != nil {
