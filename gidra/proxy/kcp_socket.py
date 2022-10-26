@@ -95,6 +95,7 @@ class KcpSocket:
         )
         self.kcp.setmtu(1200)
         self.kcp.wndsize(1024, 1024)
+        self.kcp.nodelay(1, 10, 2, 1)
 
         threading.Thread(target=self._kcp_update).start()
         threading.Thread(target=self._kcp_recv).start()

@@ -59,12 +59,11 @@ cdef extern from "compat.h":
 
 cdef struct UsrInfo:
     int handle
+    char* recv_buffer
 
 g_KcpAgentCbs = {}
 
 RECV_BUFFER_LEN = 4*1024*1024
-
-cdef char* recv_buffer = <char *>PyMem_Malloc(sizeof(char)*RECV_BUFFER_LEN)
 
 cdef int kcp_output_callback(const char *buf, int len, ikcpcb *kcp, void *arg):
     global g_KcpAgentCbs
@@ -80,6 +79,7 @@ cdef void del_kcp(PyObject *obj):
     if ckcp.user != NULL:
         global g_KcpAgentCbs
         c = <UsrInfo *>ckcp.user
+        PyMem_Free(c.recv_buffer)
         uid = <object>c.handle
         del g_KcpAgentCbs[uid]
         PyMem_Free(c)
@@ -92,18 +92,19 @@ def lkcp_create(conv, token, uid, cb):
     g_KcpAgentCbs[uid] = cb
     cdef UsrInfo *c = <UsrInfo *>PyMem_Malloc(sizeof(UsrInfo))
     c.handle = <int>uid
+    c.recv_buffer = <char *>PyMem_Malloc(sizeof(char)*RECV_BUFFER_LEN)
     cdef ikcpcb* ckcp = ikcp_create(conv, token, c)
     ckcp.output = kcp_output_callback
     return make_capsule(ckcp, NULL, del_kcp)
 
 def lkcp_recv(kcp):
-    global recv_buffer
     cdef ikcpcb* ckcp = <ikcpcb*>get_pointer(<object>kcp, NULL)
-    hr = ikcp_recv(ckcp, recv_buffer, RECV_BUFFER_LEN)
+    c = <UsrInfo *>ckcp.user
+    hr = ikcp_recv(ckcp, c.recv_buffer, RECV_BUFFER_LEN)
     if hr <= 0:
         return hr,None
     else:
-        return hr,recv_buffer[:hr]
+        return hr,c.recv_buffer[:hr]
 
 def lkcp_send(kcp, data):
     cdef ikcpcb* ckcp = <ikcpcb*>get_pointer(<object>kcp, NULL)
